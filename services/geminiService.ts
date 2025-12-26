@@ -5,7 +5,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 
 export class GeminiService {
   async chatWithGrounding(prompt: string, history: { role: string; content: string }[]) {
-    // 모델명을 명시적으로 지정하여 404 에러 해결
+    // 404 에러 방지를 위해 가장 안정적인 모델명으로 지정합니다.
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const chatSession = model.startChat({
