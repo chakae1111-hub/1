@@ -7,7 +7,6 @@ import rehypeKatex from 'rehype-katex';
 import { gemini } from './services/geminiService';
 import { Message } from './types';
 import { 
-  ChatBubbleBottomCenterTextIcon, 
   PaperAirplaneIcon, 
   ArrowPathIcon, 
   BuildingOffice2Icon,
@@ -15,13 +14,13 @@ import {
   PlusIcon,
   ChatBubbleLeftRightIcon,
   ShieldCheckIcon,
-  StopIcon,
   LightBulbIcon,
   DocumentTextIcon,
   Bars3Icon,
   XMarkIcon,
   LockClosedIcon,
-  KeyIcon
+  KeyIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 
 interface ChatSession {
@@ -55,7 +54,10 @@ const App: React.FC = () => {
     const savedSessions = localStorage.getItem(STORAGE_KEY);
     if (savedSessions) {
       try {
-        setSessions(JSON.parse(savedSessions));
+        const parsed = JSON.parse(savedSessions);
+        if (Array.isArray(parsed)) {
+          setSessions(parsed);
+        }
       } catch (e) {
         console.error("Failed to parse saved sessions", e);
       }
@@ -64,9 +66,7 @@ const App: React.FC = () => {
 
   // Save sessions to LocalStorage whenever they change
   useEffect(() => {
-    if (sessions.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
   }, [sessions]);
 
   const handleAccessSubmit = (e: React.FormEvent) => {
@@ -90,7 +90,7 @@ const App: React.FC = () => {
     }
   }, [messages, isLoading, isAuthenticated]);
 
-  // Sync current messages to the active session in the sessions list
+  // Sync current messages to the active session
   useEffect(() => {
     if (activeSessionId && isAuthenticated) {
       setSessions(prev => prev.map(s => 
@@ -128,7 +128,6 @@ const App: React.FC = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       setIsLoading(false);
-      if (timerRef.current) clearInterval(timerRef.current);
     }
   };
 
@@ -209,10 +208,12 @@ const App: React.FC = () => {
 
   const deleteSession = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setSessions(prev => prev.filter(s => s.id !== id));
-    if (activeSessionId === id) {
-      setMessages([]);
-      setActiveSessionId(null);
+    if (confirm('이 대화 내역을 삭제하시겠습니까?')) {
+      setSessions(prev => prev.filter(s => s.id !== id));
+      if (activeSessionId === id) {
+        setMessages([]);
+        setActiveSessionId(null);
+      }
     }
   };
 
@@ -315,7 +316,7 @@ const App: React.FC = () => {
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto px-3 space-y-1 pb-10">
+        <div className="flex-1 overflow-y-auto px-3 space-y-1 pb-10 custom-scrollbar">
           <div className="px-3 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">대화 보관함</div>
           {sessions.length === 0 ? (
             <div className="px-3 py-4 text-slate-600 text-[11px] italic">저장된 대화가 없습니다.</div>
@@ -329,20 +330,20 @@ const App: React.FC = () => {
                   }`}
                 >
                   <ChatBubbleLeftRightIcon className={`w-4 h-4 flex-shrink-0 ${activeSessionId === s.id ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
-                  <span className="truncate pr-6">{s.title}</span>
+                  <span className="truncate pr-8">{s.title}</span>
                 </button>
                 <button 
                   onClick={(e) => deleteSession(s.id, e)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all rounded-lg hover:bg-red-500/10"
+                  title="삭제"
                 >
-                  <XMarkIcon className="w-4 h-4" />
+                  <TrashIcon className="w-4 h-4" />
                 </button>
               </div>
             ))
           )}
         </div>
 
-        {/* Auth logout option */}
         <div className="p-4 border-t border-white/10">
            <button 
              onClick={() => {
@@ -358,7 +359,6 @@ const App: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col relative h-full overflow-hidden bg-white">
-        {/* Header */}
         <header className="px-4 lg:px-8 py-4 lg:py-6 border-b border-slate-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-30">
           <div className="flex items-center space-x-3">
             <button 
@@ -387,17 +387,16 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Message List */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-10 scroll-smooth pb-32">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-10 scroll-smooth pb-32 custom-scrollbar">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center max-w-lg mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <div className="p-5 bg-indigo-50 rounded-3xl">
                 <BuildingOffice2Icon className="w-14 h-14 text-indigo-500" />
               </div>
               <div className="space-y-2">
-                <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight break-keep px-4">전문 설계 법규 가이드를 시작합니다</h2>
+                <h2 className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight break-keep px-4">전문 설계 법규 가이드</h2>
                 <p className="text-sm lg:text-base text-slate-500 font-medium leading-relaxed px-6 break-keep">
-                  질문에 대해 국가 공인 데이터베이스를 기반으로 <br className="hidden lg:block"/> 가장 정확한 답변을 제공합니다.
+                  국가 공인 데이터베이스를 기반으로 <br className="hidden lg:block"/> 가장 정확한 설계 기준을 안내합니다.
                 </p>
               </div>
               <div className="grid grid-cols-1 gap-3 w-full px-4">
@@ -428,7 +427,6 @@ const App: React.FC = () => {
                       <div className="w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-indigo-400 font-black text-sm shadow-xl border border-white/10 ring-4 ring-slate-50">AK</div>
                     </div>
                     <div className="flex-1 flex flex-col space-y-4">
-                      {/* Main Content Bubble */}
                       <div className="bg-white border border-slate-100 rounded-3xl lg:rounded-[2rem] p-6 lg:p-8 shadow-sm ring-1 ring-slate-100/50">
                         <div className="prose prose-slate max-w-none prose-sm lg:prose-base leading-relaxed break-keep">
                           <ReactMarkdown 
@@ -443,7 +441,6 @@ const App: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Summary Bubble */}
                       {msg.summary && (
                         <div className="bg-slate-900 rounded-3xl p-6 shadow-2xl border-l-[6px] border-indigo-500">
                           <div className="flex items-center space-x-2.5 mb-4 text-indigo-400 font-bold text-[11px] lg:text-[12px] uppercase tracking-[0.2em]">
@@ -458,7 +455,6 @@ const App: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Suggestions Bubble */}
                       {msg.suggestions && (
                         <div className="bg-indigo-50/50 rounded-3xl p-6 shadow-sm border border-indigo-100/50">
                           <div className="flex items-center space-x-2.5 mb-4 text-indigo-700 font-bold text-[11px] lg:text-[12px] uppercase tracking-[0.1em]">
@@ -473,7 +469,6 @@ const App: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Footer */}
                       <div className="flex flex-wrap items-center justify-between gap-4 px-2">
                         <div className="flex flex-wrap gap-1.5 lg:gap-2">
                           {msg.sources?.map((s, idx) => (
@@ -482,7 +477,7 @@ const App: React.FC = () => {
                               href={s.uri} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="flex items-center space-x-2 px-3.5 py-2 bg-slate-50 hover:bg-indigo-50 text-indigo-700 rounded-xl text-[10px] lg:text-[11px] font-bold border border-slate-200 transition-all hover:scale-105 active:scale-95"
+                              className="flex items-center space-x-2 px-3.5 py-2 bg-slate-50 hover:bg-indigo-50 text-indigo-700 rounded-xl text-[10px] lg:text-[11px] font-bold border border-slate-200 transition-all hover:scale-105 active:scale-95 shadow-sm"
                             >
                               <ShieldCheckIcon className="w-3.5 h-3.5" />
                               <span className="truncate max-w-[120px] lg:max-w-[200px]">{s.title}</span>
@@ -517,7 +512,7 @@ const App: React.FC = () => {
                 </span>
                 <button 
                   onClick={handleStop} 
-                  className="ml-2 text-[11px] font-black text-red-500 hover:text-red-700 active:scale-90 transition-transform px-3 py-1.5 bg-red-50 rounded-lg"
+                  className="ml-2 text-[11px] font-black text-red-500 hover:text-red-700 active:scale-90 transition-transform px-3 py-1.5 bg-red-50 rounded-lg shadow-sm"
                 >
                   중단
                 </button>
@@ -527,10 +522,9 @@ const App: React.FC = () => {
           <div ref={chatEndRef} />
         </main>
 
-        {/* Input Footer */}
-        <footer className="p-4 lg:p-8 bg-white/90 backdrop-blur-xl border-t border-slate-100 absolute bottom-0 left-0 right-0 safe-bottom">
+        <footer className="p-4 lg:p-8 bg-white/95 backdrop-blur-xl border-t border-slate-100 absolute bottom-0 left-0 right-0 safe-bottom">
           <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-            <div className="flex items-end space-x-3 bg-slate-50 rounded-2xl lg:rounded-[1.75rem] p-3 lg:p-4 border border-slate-200 focus-within:border-indigo-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all duration-300">
+            <div className="flex items-end space-x-3 bg-slate-50 rounded-2xl lg:rounded-[1.75rem] p-3 lg:p-4 border border-slate-200 focus-within:border-indigo-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all duration-300 shadow-sm">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -554,7 +548,9 @@ const App: React.FC = () => {
               </button>
             </div>
             <div className="mt-3 text-center">
-              <p className="text-[10px] lg:text-[11px] text-slate-400 font-bold tracking-tight uppercase opacity-60">Archi-King은 실수를 할 수 있습니다.</p>
+              <p className="text-[10px] lg:text-[11px] text-slate-400 font-bold tracking-tight uppercase opacity-70">
+                Archi-King은 실수를 할 수 있습니다.
+              </p>
             </div>
           </form>
         </footer>
