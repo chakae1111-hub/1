@@ -1,0 +1,5 @@
+{
+  "name": "Archi-King",
+  "description": "An AI-powered assistant for railway station architectural design, providing official data from Korean government and railway authorities.",
+  "requestFramePermissions": []
+}
