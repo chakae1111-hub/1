@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 기존 index.html에 있던 커스텀 스타일 통합 */
 body {
   @apply bg-slate-50;
   font-family: 'Pretendard', -apple-system, sans-serif;
@@ -12,5 +11,10 @@ body {
 .prose-table {
   @apply w-full border-collapse my-4 text-[13px] rounded-xl overflow-hidden border border-slate-200 block overflow-x-auto whitespace-nowrap;
 }
-.prose-table th { @apply bg-slate-100 text-slate-700 font-bold p-3 text-left border-bottom-2 border-slate-200; }
-.prose-table td { @apply p-3 border-bottom border-slate-100 bg-white text-slate-600; }
+/* border-bottom-2를 border-b-2로, border-bottom을 border-b로 수정했습니다 */
+.prose-table th { 
+  @apply bg-slate-100 text-slate-700 font-bold p-3 text-left border-b-2 border-slate-200; 
+}
+.prose-table td { 
+  @apply p-3 border-b border-slate-100 bg-white text-slate-600; 
+}
