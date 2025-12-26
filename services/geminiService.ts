@@ -1,5 +1,4 @@
-
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const SYSTEM_INSTRUCTION = `당신은 대한민국의 '건축설계 및 관련 법규 전문 AI 도우미', 'Archi-King'입니다.
 귀하의 모든 지식과 답변은 반드시 아래의 공신력 있는 기관의 '최신 현행' 자료에 기반해야 합니다:
@@ -32,25 +31,35 @@ const SYSTEM_INSTRUCTION = `당신은 대한민국의 '건축설계 및 관련 �
 4. 추가 제언 (💡 추가 제언): 요약 섹션 뒤에 이 섹션을 포함하여 관련하여 고려해야 할 실무적 팁, 법적 유의사항 또는 연관된 추가 질문 2~3가지를 추천하십시오.
 5. 출처: 답변에 인용된 법령 번호나 기준 명칭을 명시하십시오.`;
 
+// Vite 환경 변수에서 API 키를 불러옵니다.
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(API_KEY);
+
 export class GeminiService {
   async chatWithGrounding(prompt: string, history: { role: string; content: string }[]) {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: [
-        ...history.map(h => ({ role: h.role === 'user' ? 'user' : 'model', parts: [{ text: h.content }] })),
-        { role: 'user', parts: [{ text: prompt }] }
-      ],
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        tools: [{ googleSearch: {} }],
-      },
+    // 모델 설정 (Google Search Grounding 기능 포함)
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash", // 또는 사용하시는 모델명
+      systemInstruction: SYSTEM_INSTRUCTION,
     });
 
-    // Clean up any stray <br> tags if the model ignores the instruction
-    const rawText = response.text || "데이터를 불러오는 데 실패했습니다.";
-    const text = rawText.replace(/<br\s*\/?>/gi, '\n');
+    const chatSession = model.startChat({
+      history: history.map(h => ({
+        role: h.role === 'user' ? 'user' : 'model',
+        parts: [{ text: h.content }],
+      })),
+      generationConfig: {
+        maxOutputTokens: 2000,
+      },
+      // 구글 검색 결과 기반 답변 설정
+      tools: [{ googleSearchRetrieval: {} } as any],
+    });
 
+    const result = await chatSession.sendMessage(prompt);
+    const response = result.response;
+    const text = response.text();
+
+    // 출처 정보 추출
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
       uri: chunk.web?.uri || '',
       title: chunk.web?.title || '공식 문서'
