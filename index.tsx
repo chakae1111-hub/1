@@ -1,4 +1,13 @@
+import './index.css'; // 이 줄이 있어야 UI가 살아납니다.
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
 
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
